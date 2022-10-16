@@ -1,0 +1,136 @@
+// Written with Swift
+
+import Foundation
+
+/*
+ My design evolved as I worked through the problem, but I decided to create a self-modifying array of all the valid coordinates. 
+ I decided it was more practical to work out the path backwards as the starting value was always [0,0], 
+ and therefore (almost always) had a faster route when prioritizing movement up and to the left when pathing from the delivery.
+ 
+ Whenever the pathing algorithm ran into a "deadend," or a value that had to backtrack to a place it had already been, 
+ it would delete the "deadend" from the valid coordinates array list. This solution should be fairly responsive and handle a wide variety of scenarios.
+ */
+
+let test1: [[Int]] = [
+    [1, 0, 0],
+    [1, 1, 0],
+    [1, 9, 0]
+]
+// Should be 3
+
+let test2: [[Int]] = [
+    [1, 1, 1],
+    [0, 0, 1],
+    [9, 1, 1]
+]
+// Should be 6
+
+let test3: [[Int]] = [
+    [1, 0, 0],
+    [1, 1, 1],
+    [0, 0, 1],
+    [1, 0, 1],
+    [9, 1, 1]
+]
+// Should be 8
+
+let test4: [[Int]] = [
+    [1, 1, 0, 1],
+    [0, 1, 0, 1, 1],
+    [1, 1, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 9, 1, 1],
+    [1, 1, 1]
+]
+// Should be 10
+
+let test5: [[Int]] = [
+    [1, 0, 0, 9],
+    [1, 1, 1, 1]
+]
+// Should be 5
+
+func findPathNumber(coordinateArray: [[Int]]) -> Int {
+    var deliveryCoordinates: [Int] = []
+    var validCoordinates: [[Int]] = []
+    
+    for rowIndex in coordinateArray.indices {
+        let currentRow: [Int] = coordinateArray[rowIndex]
+        
+        for columnIndex in coordinateArray[rowIndex].indices {
+            let currentColumn: Int = currentRow[columnIndex]
+            if currentColumn == 1 {
+                let tempCoordinate: [Int] = [rowIndex, columnIndex]
+                validCoordinates.append(tempCoordinate)
+            } else if currentColumn == 9 {
+                deliveryCoordinates = [rowIndex, columnIndex]
+            }
+        }
+    }
+    
+    func runPath() -> Int {
+        var timesAttempted: Int = 0
+        var currentPath: [[Int]] = [deliveryCoordinates]
+        var movingTo: [Int] = []
+        
+        while currentPath.last != [0,0] || timesAttempted > 10000 {
+            
+            // Focus on going up and left to reach 0,0
+            
+            if validCoordinates.contains(moving(direction: .up)) && !currentPath.contains(moving(direction: .up)) {
+                movingTo = moving(direction: .up)
+                currentPath.append(movingTo)
+                
+            } else if validCoordinates.contains(moving(direction: .left)) && !currentPath.contains(moving(direction: .left)) {
+                movingTo = moving(direction: .left)
+                currentPath.append(movingTo)
+                
+            } else if validCoordinates.contains(moving(direction: .right)) && !currentPath.contains(moving(direction: .right)) {
+                movingTo = moving(direction: .right)
+                currentPath.append(movingTo)
+                
+            } else if validCoordinates.contains(moving(direction: .down)) && !currentPath.contains(moving(direction: .down)) {
+                movingTo = moving(direction: .down)
+                currentPath.append(movingTo)
+                
+            } else {
+                if currentPath.last == deliveryCoordinates {
+                    print("Error! No available paths")
+                } else {
+                    validCoordinates.removeAll(where: {$0 == currentPath.last})
+                    currentPath.removeLast()
+                }
+            }
+            
+        }
+        
+        func moving(direction: WaysToMove) -> [Int] {
+            
+            let usedPath = currentPath
+            
+            switch direction {
+            case .up:
+                return [usedPath.last![0]-1, usedPath.last![1]]
+            case .right:
+                return [usedPath.last![0], usedPath.last![1]+1]
+            case .left:
+                return [usedPath.last![0], usedPath.last![1]-1]
+            case .down:
+                return [usedPath.last![0]+1, usedPath.last![1]]
+            }
+        }
+        
+        enum WaysToMove {
+            case up
+            case right
+            case left
+            case down
+        }
+        
+        return currentPath.count-1
+    }
+    
+    return runPath()
+}
+
+print(findPathNumber(coordinateArray: test4))
